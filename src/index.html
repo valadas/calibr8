@@ -7,8 +7,18 @@
 
     <script type="module" src="/build/em-calibrator-web.esm.js"></script>
     <script nomodule src="/build/em-calibrator-web.js"></script>
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-PJJLMG5N6D"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-PJJLMG5N6D');
+    </script>
   </head>
   <body>
-    <em-calibrator first="Stencil" last="'Don't call me a framework' JS"></em-calibrator>
+    <em-calibrator></em-calibrator>
   </body>
 </html>

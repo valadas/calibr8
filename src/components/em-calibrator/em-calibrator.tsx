@@ -2,7 +2,7 @@ import { Component, Host, getAssetPath, h, State } from '@stencil/core';
 
 @Component({
   tag: 'em-calibrator',
-  styleUrl: 'em-calibrator.css',
+  styleUrl: 'em-calibrator.scss',
   shadow: true,
   assetsDirs: ['assets'],
 })
@@ -227,18 +227,63 @@ export class EmCalibrator {
       <Host>
         <h1>EM Calibrator</h1>
         <fieldset>
+          <legend>Introduction</legend>
+          <p>
+            This tool simply takes a gcode file and adjustes the extrusion multiplier (EM) left to right as a gradient.
+            It allows inspecting the effets of EM values on a single print to either calibrate quicker or with a lot of precision.
+          </p>
+          <p>
+            Before using this tool, you should have:
+            <ul>
+              <li>Calibrated your extruder.</li>
+              <li>Have good bed adhesion.</li>
+              <li>Have a good first layer squish.</li>
+              <li>Tuned pressure advance or linear advance.</li>
+            </ul>
+            <a href="https://ellis3dp.com/Print-Tuning-Guide/">Ellis' Print Tuning Guide</a> is a great guide for calibration,
+            I recommend following the guide up to EM Calibration and returning to it after using this tool for the rest of your calibrations.
+          </p>
+        </fieldset>
+        <fieldset>
           <legend>Download and slice</legend>
-          <p>Start by downloading <a href={getAssetPath("./assets/em.stl")}>this model</a> and slice it with your slicer of choice.</p>
+          <p>Start by downloading one of these files:</p>
+          <div class="stl-files">
+            <div>
+              <a href={getAssetPath("./assets/Tolerance-100mm.stl")}>
+                <img src={getAssetPath("./assets/Tolerance-100mm.jpg")} alt="Normal tolerance test." />
+              </a>
+              <p>Great for calibrating EM for 0.1mm tolerances.</p>
+            </div>
+            <div>
+              <a href={getAssetPath("./assets/spring-100mm.stl")}>
+                <img src={getAssetPath("./assets/spring-100mm.jpg")} alt="Spring test." />
+              </a>
+              <p>Great if you want to calibrate quick.</p>
+            </div>
+            <div>
+              <a href={getAssetPath("./assets/top-100mm.stl")}>
+                <img src={getAssetPath("./assets/top-100mm.png")} alt="Spring test." />
+              </a>
+              <p>Great to calibrate top layer surface quality.</p>
+            </div>
+          </div>
           <p>Use your normal print settings but ensure that:</p>
+          <ul>
+            <li>You reduce your normal flow by at least the same percentage as the calibration amount. (If you are doing +-50%, reduce your flow by 50%). We can tune for speed later.</li>
+            <li>Do <strong>not</strong> use a skirt or brim, this would interfere with the math of this tool.</li>
+            <li>The part needs to be oriented with the long side in the X axis, do not turn it.</li>
+          </ul>
+          <p>If you are tuning for top surface quality further ensure that:</p>
           <ul>
             <li>Your infill is at 45 degrees from the rectangle.</li>
             <li>You have at least 2 layers of sparse infill to decouple the top layers from any first layer issues.</li>
+            <li>Adding more top layers helps for top layer calibration (I like 10 or 11 with 0.2mm layer height.) If you use very high layers with large nozzles, you can scale the model in the z axis to give more height.</li>
           </ul>
         </fieldset>
 
         <fieldset>
           <legend>Upload your gcode</legend>
-          <p>Upload your gcode file here:</p>
+          <p>Upload your sliced gcode file here:</p>
           <input
             type="file"
             id="gcode"
@@ -251,7 +296,8 @@ export class EmCalibrator {
         {this.originalGcode && 
           <fieldset>
             <legend>Settings</legend>
-            <label>Top Only: </label>
+            <em>This tool will overextrude (potentially a lot if you pick 50% or 20%). Make sure to keep an eye on the print.</em><br /><br />
+            <label>Top Only (useful to calibrate top layer EM): </label>
             <input type="checkbox" checked={this.topOnly} onChange={(e) => this.topOnly = (e.target as HTMLInputElement).checked}/>
             <br />
             <label>Extrusion Multiplier Range: </label>
@@ -259,6 +305,10 @@ export class EmCalibrator {
               onChange={(e) => {
                 this.adjustmentValue = parseInt((e.target as HTMLSelectElement).value);
                 this.handleSelectedRange();
+              }}
+              onFocus={() => {
+                this.result = undefined;
+                this.showInstructions = false;
               }}
             >
               <option value="">-- Select an option --</option>
@@ -278,7 +328,7 @@ export class EmCalibrator {
             <p>Download the result &nbsp;
               <a
                 href={`data:text/plain;charset=utf-8,${encodeURIComponent(this.result)}`}
-                download={`em-calibrated${this.adjustmentValue}.gcode`}
+                download={`em-calibration_${this.adjustmentValue}.gcode`}
                 onClick={() => this.showInstructions = true}
               >
                 here
@@ -290,35 +340,19 @@ export class EmCalibrator {
           <fieldset>
             <legend>Instructions</legend>
             <p>Print the downloaded file.</p>
-            <p>Bend and twist and stretch the striped band lightly.</p>
-            <p>
-              Measure milimeters from the left (-) side to where the band did not property separate.
-              This is the <strong>Maximum</strong> EM you could use and still be able to print with 0.1 or 0.2 tolerances.
-              <em>
-                One side has all 0.1mm clearances and the other side all 0.2mm clearances.
-                If one side completelly does not come apart, you either need to do an extruder calibration 
-                or your printer is not precise enough for 0.1mm tolerances.
-              </em>
-            </p>
-            <p>For the 100mm x 50mm rectangle, measure how many mm from the left (-) side look underextruded, this is your <string>Minimum</string> EM you can set.</p>
             <fieldset>
-              <legend>Calculations</legend>
-              <div class="form">
-                <label>Minimum mm: </label>
+              <legend>Interpreting the results</legend>
+              <p>Find the best spot on the part and measure its distance from the left.</p>
+                <label>Best spot mm: </label>
                 <input type="range" step={1} min={0} max={100} value={this.minmm} onInput={e => this.setMinmm((e.target as HTMLInputElement).value)}/>
-                <label>Minimum mm: </label>
-                <span>{this.minmm}</span>
-                <label>Minimum EM: </label>
-                <span>{this.minEm}</span>
-                <label>Maximum mm: </label>
-                <input type="number" value={this.maxmm} onInput={e =>this.setMaxmm((e.target as HTMLInputElement).value)}/>
-                <label>Maximum EM: </label>
-                <span>{this.maxEm}</span>
-                <label>Average EM: </label>
-                <span>{(this.minEm + this.maxEm)/2}</span>
-                <label>EM range: </label>
-                <span>{(this.minEm && this.maxEm && ((this.maxEm - this.minEm) / ((this.minEm + this.maxEm) / 2) * 100)/2)?.toFixed(5)}</span>
-              </div>
+                <span>{this.minmm}</span> mm
+                <br />
+                {this.minEm &&
+                <div>
+                  <p>Multiply your current EM value (in your slicer) by: {this.minEm}</p>
+                  <p>If you want further precision, reslice the file and reupload above then pick a lower EM Range value.</p>
+                </div>
+                }
             </fieldset>
           </fieldset>
         }

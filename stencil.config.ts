@@ -1,4 +1,5 @@
 import { Config } from '@stencil/core';
+import { sass } from '@stencil/sass';
 
 export const config: Config = {
   namespace: 'em-calibrator-web',
@@ -21,4 +22,7 @@ export const config: Config = {
   testing: {
     browserHeadless: "new",
   },
+  plugins: [
+    sass(),
+  ],
 };

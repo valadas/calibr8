@@ -1,0 +1,36 @@
+:host {
+  display: block;
+}
+
+.form{
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr 1fr;
+  label{
+    text-align: right;
+  }
+}
+em{
+  color: red;
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+.stl-files{
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(3, 1fr);
+  max-width: 100%;
+  >div{
+    border: 1px solid gray;
+    text-align: center;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    a{
+      img{
+        max-width: 100%;
+      }
+    }
+  }
+}

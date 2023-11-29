@@ -28,7 +28,8 @@
     "publish": "node --loader ts-node/esm publish.ts"
   },
   "dependencies": {
-    "@stencil/core": "^4.7.0"
+    "@stencil/core": "^4.7.0",
+    "@stencil/sass": "^3.0.7"
   },
   "devDependencies": {
     "@types/gh-pages": "^5.0.1",
