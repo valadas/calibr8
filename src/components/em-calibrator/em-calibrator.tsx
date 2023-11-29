@@ -16,6 +16,7 @@ export class EmCalibrator {
   @State() maxmm: number;
   @State() minEm: number;
   @State() maxEm: number;
+  @State() topOnly: boolean;
 
   handleSelectedRange(): void {
     this.processFile(this.adjustmentValue);
@@ -30,17 +31,28 @@ export class EmCalibrator {
 
   generateResult(layers: string[], range: number): string {
     var newLayers: string[] = [];
-    var layerCount = 0;
-    for (var layer of layers) {
-      if (layerCount > 1) {
-        var newLayer = this.generateNewLayer(layer, range);
-        newLayers.push(newLayer);
+    for (var i = 0; i < layers.length; i++)
+    {
+      var layer = layers[i];
+
+      // If topOnly is true, only modify the last layer
+      if (this.topOnly && i === layers.length - 1)
+      {
+          var newLayer = this.generateNewLayer(layer, range);
+          newLayers.push(newLayer);
       }
-      else {
-        newLayers.push(layer);
+      else if (!this.topOnly && i > 1)
+      {
+          var newLayer = this.generateNewLayer(layer, range);
+          newLayers.push(newLayer);
       }
-      layerCount++;
+      else
+      {
+          // If not the last layer (or if topOnly is false), add the layer as it is
+          newLayers.push(layer);
+      }
     }
+    
     return newLayers.join("\n");
   }
 
@@ -239,11 +251,14 @@ export class EmCalibrator {
         {this.originalGcode && 
           <fieldset>
             <legend>Settings</legend>
+            <label>Top Only: </label>
+            <input type="checkbox" checked={this.topOnly} onChange={(e) => this.topOnly = (e.target as HTMLInputElement).checked}/>
+            <br />
             <label>Extrusion Multiplier Range: </label>
             <select
               onChange={(e) => {
                 this.adjustmentValue = parseInt((e.target as HTMLSelectElement).value);
-                return this.handleSelectedRange();
+                this.handleSelectedRange();
               }}
             >
               <option value="">-- Select an option --</option>
@@ -255,7 +270,6 @@ export class EmCalibrator {
               <option value={1}>+- 1%</option>
             </select>
             <br />
-
           </fieldset>
         }
         {this.result &&
